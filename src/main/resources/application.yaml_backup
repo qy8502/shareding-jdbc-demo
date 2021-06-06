@@ -1,0 +1,86 @@
+server:
+  port: 8801
+spring:
+  application:
+    name: shareding-jdbc-demo
+  datasource:
+    username: app
+    password: challenger
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    druid:
+      max-active: 20
+      min-idle: 5
+      initial-size: 5
+      max-wait: 60000
+      time-between-eviction-runs-millis: 60000
+      min-evictable-idle-time-millis: 30000
+      max-evictable-idle-time-millis: 300000
+      validation-query: SELECT 'X'
+      test-while-idle: true
+      test-on-borrow: true
+      test-on-return: false
+      max-pool-prepared-statement-per-connection-size: 20
+      filters: stat
+      stat:
+        log-slow-sql: true
+        slow-sql-millis: 1000
+      stat-view-servlet:
+        enabled: true
+        reset-enable: true
+  shardingsphere:
+    dataSource:
+      names: user-student-write,user-student-read,user-teacher-write,user-teacher-read
+      # 配置主库
+      user-student-write:
+        type: com.alibaba.druid.pool.DruidDataSource
+        url: jdbc:mysql://10.0.11.63:3306/shareding_jdbc_demo?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
+      user-student-read: # 配置第一个从库
+        type: com.alibaba.druid.pool.DruidDataSource
+        url: jdbc:mysql://10.0.11.63:3306/shareding_jdbc_demo?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
+      # 配置主库
+      user-teacher-write:
+        type: com.alibaba.druid.pool.DruidDataSource
+        url: jdbc:mysql://10.0.11.63:3306/shareding_jdbc_demo?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
+      user-teacher-read: # 配置第一个从库
+        type: com.alibaba.druid.pool.DruidDataSource
+        url: jdbc:mysql://10.0.11.63:3306/shareding_jdbc_demo?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
+    sharding: # 配置读写分离
+      auto-create-table:
+        enabled: true
+        tables:
+          user: user_.*
+        refresh-time-span: 2000
+      master-slave-rules:
+        user-student:
+          master-data-source-name: user-student-write
+          slave-data-source-names: user-student-read
+        user-teacher:
+          master-data-source-name: user-teacher-write
+          slave-data-source-names: user-teacher-read
+      #      default-data-source-name: user-student
+      tables:
+        user:
+          #actual-data-nodes: user-student.user_student,user-teacher.user_$->{['teacher','student']}
+          #actual-data-nodes: user-$->{['student','teacher']}.user_$->{com.example.sharedingjdbcdemo.config.AutoCreateTableRoutingHook.getTables('user_')}
+          actual-data-nodes: user-student.user_student,user-teacher.user
+          database-strategy:
+            standard:
+              sharding-column: type
+              precise-algorithm-class-name: com.example.sharedingjdbcdemo.config.DefaultDatabasePreciseShardingAlgorithm
+          table-strategy:
+            standard:
+              sharding-column: type
+              precise-algorithm-class-name: com.example.sharedingjdbcdemo.config.DefaultPreciseShardingAlgorithm
+    props:
+      sql: # 开启SQL显示，默认值: false，注意：仅配置读写分离时不会打印日志！！！
+        show: true
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml    # mapper映射文件位置
+  type-aliases-package: com.example.sharedingjdbcdemo.entity    # 实体类所在的位置
+  #configuration:
+    #log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+logging:
+  level:
+    ROOT: info
