@@ -76,10 +76,13 @@ spring:
         show: true
 
 mybatis:
-  mapper-locations: classpath:mapper/*.xml    # mapper映射文件位置
-  type-aliases-package: com.example.sharedingjdbcdemo.entity    # 实体类所在的位置
-    #configuration:
-  #log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    jsonTypeHandle: com.qlteacher.mybatis.utils.JsonWithClassTypeHandler
+    jsonTypes:
+      - java.util.Map
+    jsonArrayTypes:
+      - java.lang.String
 
 logging:
   level:
